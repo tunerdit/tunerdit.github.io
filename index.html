@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Training-free progressive steering of diffusion transformer for consistent multi-event video generation.">
+  <meta name="keywords" content="TunerDiT, DiT, Video Generation, Diffusion Transformer">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TunerDiT: Training-free Progressive Steering of Diffusion Transformer for Consistent Multi-Event Video Generation</title>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/favicon.png">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+
+  <style>
+    /* Premium Academic Stylesheet Overrides */
+    :root {
+      --primary: #0f172a;       /* Deep Slate */
+      --secondary: #2563eb;     /* Professional Cobalt */
+      --accent: #eff6ff;        /* Soft Highlight Blue */
+      --border-color: #e2e8f0;  /* Clean Slate Border */
+      --text-muted: #64748b;    /* Muted Slate Text */
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: #334155;
+      background-color: #f8fafc;
+      line-height: 1.6;
+    }
+
+    /* Elegant Hero Typography */
+    .hero {
+      background: #ffffff;
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .publication-title {
+      font-weight: 800;
+      letter-spacing: -0.75px;
+      color: var(--primary);
+      line-height: 1.2;
+    }
+
+    .publication-authors a {
+      color: #475569;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .publication-authors a:hover {
+      color: var(--secondary);
+    }
+
+    /* Modern Rounded Action Buttons */
+    .external-link {
+      border-radius: 9999px !important;
+      font-weight: 500 !important;
+      padding-left: 1.5rem !important;
+      padding-right: 1.5rem !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: all 0.2s ease !important;
+    }
+
+    .external-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+    }
+
+    /* Abstract Block */
+    .abstract-box {
+      background-color: #ffffff;
+      /* border-left: 4px solid var(--secondary); */
+      padding: 2.5rem;
+      border-radius: 0 12px 12px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+
+    /* Section Headers */
+    .section-title {
+      font-weight: 700;
+      color: var(--primary);
+      position: relative;
+      padding-bottom: 0.5rem;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 3px;
+      /* background-color: var(--secondary); */
+      border-radius: 2px;
+    }
+
+    /* Figure & Interactive Media Cards */
+    .figure-card {
+      background-color: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .figure-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+    }
+
+    .figure-caption {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      text-align: justify;
+      margin-top: 1.25rem;
+      line-height: 1.55;
+    }
+
+    .figure-caption strong {
+      color: var(--primary);
+    }
+
+    /* Custom Grid Widescreen Media Elements */
+    .video-comparison-container video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border-radius: 6px;
+      display: block;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    /* Highlight Container for Ours */
+    .ours-highlight-container {
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 6px;
+    }
+
+    .ours-label {
+      color: var(--secondary) !important;
+      font-weight: 700 !important;
+    }
+
+    /* Academic Booktabs Table Layouts */
+    .booktabs-table {
+      border-collapse: collapse;
+      border-top: 2.5px solid var(--primary) !important;
+      border-bottom: 2.5px solid var(--primary) !important;
+      background-color: #ffffff;
+      font-family: inherit;
+    }
+
+    .booktabs-table th {
+      border-bottom: 1.5px solid var(--primary) !important;
+      border-top: none !important;
+      border-left: none !important;
+      border-right: none !important;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: none !important;
+    }
+
+    .booktabs-table td {
+      border: none !important;
+      font-weight: 400;
+    }
+
+    .booktabs-table tr.midrule-row td {
+      border-top: 1px solid var(--border-color) !important;
+    }
+
+    .booktabs-table tr.subheader-row {
+      font-weight: 600;
+      background-color: #f8fafc;
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .booktabs-table tr.ours-row {
+      background-color: #f0f7ff;
+    }
+
+    .booktabs-table tr.ours-row-strong {
+      background-color: #e0f2fe;
+      font-weight: 500;
+    }
+
+    /* Method overview block */
+    .method-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.75rem;
+      height: 100%;
+      transition: all 0.2s ease;
+    }
+
+    .method-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+    }
+
+    /* Code styling */
+    pre {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+      border-radius: 10px;
+      padding: 1.5rem !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    code {
+      color: #38bdf8 !important;
+      background: transparent !important;
+    }
+  </style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">
+            <img src="./static/images/favicon.png" alt="Icon" style="height: 0.9em; vertical-align: middle; margin-right: 0.2em;"> 
+            TunerDiT: Training-free Progressive Steering of Diffusion Transformer for Multi-Event Video Generation
+          </h1>
+          
+         <!-- First line of authors -->
+          <div class="is-size-5 publication-authors mt-5">
+            <span class="author-block">
+              <a href="#">Ruotong Liao</a><sup>1,3*</sup>,
+            </span>
+            <span class="author-block">
+              <a href="#">Guowen Huang</a><sup>2*</sup>,
+            </span>
+            <span class="author-block">
+              <a href="#">Qing Cheng</a><sup>2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="#">Guangyao Zhai</a><sup>2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="#">Lei Zhang</a><sup>4</sup>
+            </span>
+          </div>
+
+          <!-- Second line of authors -->
+          <div class="is-size-5 publication-authors mt-1">
+            <span class="author-block">
+              <a href="#">Xun Xiao</a><sup>5</sup>,
+            </span>
+            <span class="author-block">
+              <a href="#">Thomas Seidl</a><sup>1,3</sup>,
+            </span>
+            <span class="author-block">
+              <a href="#">Daniel Cremers</a><sup>2,3</sup>,
+            </span>
+            <span class="author-block">
+              <a href="#">Volker Tresp</a><sup>1,3</sup>
+            </span>
+          </div>
+
+          <!-- Affiliations -->
+          <div class="is-size-6 publication-authors mt-3 has-text-weight-semibold" style="color: var(--text-muted);">
+            <span class="author-block"><sup>1</sup>Ludwig Maximilian University of Munich &nbsp;&nbsp;&bull;&nbsp;&nbsp;</span>
+            <span class="author-block"><sup>2</sup>Technical University of Munich &nbsp;&nbsp;&bull;&nbsp;&nbsp;</span>
+            <span class="author-block"><sup>3</sup>MCML &nbsp;&nbsp;&bull;&nbsp;&nbsp;</span>
+            <span class="author-block"><sup>4</sup>University of Hamburg &nbsp;&nbsp;&bull;&nbsp;&nbsp;</span>
+            <span class="author-block"><sup>5</sup>Huawei European Research Institute</span>
+          </div>
+
+          <!-- Project Page Link under the Authors -->
+          <div class="is-size-5 publication-authors mt-4">
+            <span class="author-block has-text-weight-semibold">
+              <i class="fas fa-globe"></i> Project page: <a href="https://tunerdit.github.io" target="_blank" style="color: var(--secondary);">https://tunerdit.github.io</a>
+            </span>
+          </div>
+
+          <div class="column has-text-centered mt-4">
+            <div class="publication-links">
+              <!-- arXiv Link -->
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2605.31590" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Code Link -->
+              <!-- <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                </a>
+              </span> -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Abstract Section -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <div class="abstract-box">
+          <h2 class="title is-3 has-text-centered mb-5" style="color: var(--primary); font-weight: 700;">Abstract</h2>
+          <div class="content has-text-justified">
+            Text-to-video (T2V) generation faces challenging questions when generating videos with long horizons containing multiple events. Inspired by the intrinsics of the diffusion process, we probe video diffusion transformers (DiTs) and uncover intrinsic turning points in the DiT denoising trajectory where conditioning text affects generation from global layout to fine-grained details. Building on this finding, we present <strong>TunerDiT</strong>, a simple yet effective progressive steering method that requires no additional training for multi-event generation. TunerDiT comprises two steering handles: (1) <strong>Event-Partitioned Masking</strong> that enforces event boundaries while allowing cross-event transition bands; (2) <strong>Cross-Event Prompt Fusion</strong> that injects neighboring event semantics for late-stage refinement. We contribute a self-curated prompt suite for benchmarking multi-event generation, i.e. <span style="font-style: italic; font-variant: small-caps;">Meve</span>. TunerDiT achieves state-of-the-art performance across 8 metrics and offers a tunable trade-off between video consistency and event separation, compared with other training-free methods. The improvement in text alignment increases with the event count, indicating a scaling possibility with increasing event count.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Card 1 -->
+    <div class="columns is-centered mt-6">
+      <div class="column is-four-fifths">
+        <div class="figure-card">
+          <figure class="image">
+            <img src="static/images/first_row_ratio.jpg" alt="First Row Ratio" style="max-width: 100%; height: auto; border-radius: 6px;">
+          </figure>
+          <p class="figure-caption">
+            <strong>Fig. 1: Different denoising steps are utilizing text inputs differently.</strong>
+            TunerDiT finds this insight by probing prompt conditioning of video diffusion models.
+            When switching the input prompt at various fractions of the denoising steps (e.g., 0%,
+            10%, 20%, 40%, 70%, 100%), it is observed that early steps dominate the global layout
+            while late steps refine fine-grained appearance and motion, revealing intrinsic turning
+            points where text influence changes. Building on this insight, TunerDiT is a training-free, progressive steering method for video DiTs, yielding consistent multi-event videos with clear boundaries and smooth transitions.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Method / Approach Overview -->
+<section class="section" style="background-color: #ffffff; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered section-title mb-6">Method Overview</h2>
+        <div class="content has-text-justified mb-5">
+          <p>
+            TunerDiT is a progressive coarse-to-fine steering framework for multi-event T2V generation that operates without training. It exploits intrinsic turning points in the DiT denoising process by intervening at the appropriate phase to first generate a shared layout of multiple events and refine inner event details at a certain later stage, utilizing two steering handles activated according to a schedule:
+          </p>
+        </div>
+        <div class="columns is-centered">
+          <!-- Cross-Event Prompt Fusion -->
+          <div class="column is-6">
+            <div class="method-card">
+              <p class="title is-5" style="color: var(--secondary);"><i class="fas fa-magic"></i> 1. Cross-Event Prompt Fusion (PF)</p>
+              <div class="content">
+                A gating scheme that <strong>conditions video latents on event prompts</strong> to enhance semantic awareness and coherence.
+              </div>
+            </div>
+          </div>
+          <!-- Event-Partitioned Mask -->
+          <div class="column is-6">
+            <div class="method-card">
+              <p class="title is-5" style="color: var(--secondary);"><i class="fas fa-border-style"></i> 2. Event-Partitioned Mask (EM)</p>
+              <div class="content">
+                A diagonal mask that <strong>isolates events with connecting bands</strong> across events on DiT attention layers. The mask design restrains DiT’s attention to enforce event boundaries and ensure smooth handovers.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Card 2 -->
+    <div class="columns is-centered mt-6">
+      <div class="column is-full-width">
+        <div class="figure-card">
+          <figure class="image">
+            <img src="static/images/second_row_main_fig.jpg" alt="Method Main Figure" style="max-width: 100%; height: auto; border-radius: 6px;">
+          </figure>
+          <p class="figure-caption">
+            <strong>Fig. 2: TunerDiT progressively steers multi-event generation over diffusion steps.</strong>
+            Cross-Event Prompt Fusion (PF) first shares a common prompt to build a coherent layout, then gradually separates event prompts. Event-Partitioned Mask (EM) subsequently enforces event isolation via diagonal cross-attention blocks and introduces cross-event transition bands around boundaries, enabling smooth and semantically consistent handovers between events.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Multi-Event Qualitative Comparisons -->
+<section class="section">
+  <div class="container is-widescreen">
+    <h2 class="title is-3 has-text-centered section-title mb-6">Multi-Event Qualitative Comparisons</h2>
+    <p class="subtitle has-text-centered mb-6" style="color: var(--text-muted);">
+      Comparing TunerDiT with standard base models and existing training-free baselines across sequential events.
+    </p>
+
+    <!-- Row 1 Container with normalized styles and snug blue highlight -->
+    <div class="box video-comparison-container figure-card mb-5">
+      <div class="columns is-variable is-1 is-mobile is-vcentered">
+        <!-- OpenSora 1.2 -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">OpenSora 1.2</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_1/2.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- OpenSora 2.0 -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">OpenSora 2.0</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_1/3.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- Wan 2.2 -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">Wan 2.2</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_1/4.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- MEVG -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">MEVG</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_1/5.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- DiTCtrl -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">DiTCtrl</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_1/6.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- Mask2DiT -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">Mask2DiT</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_1/7.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- TunerDiT (Ours) -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold ours-label">TunerDiT (Ours)</p>
+          <div class="ours-highlight-container">
+            <video autoplay muted loop playsinline>
+              <source src="./static/videos/video_1/8.mp4" type="video/mp4">
+            </video>
+          </div>
+        </div>
+      </div>
+      <!-- Prompt for Row 1 -->
+      <div class="content has-text-centered mt-4">
+        <p class="is-size-6 is-italic">
+          <strong>Event Prompt:</strong> "A person is drinking a glass of water. Then the person starts cleaning the windows."
+        </p>
+      </div>
+    </div>
+
+    <!-- Row 2 Container with normalized styles and snug blue highlight -->
+    <div class="box video-comparison-container figure-card">
+      <div class="columns is-variable is-1 is-mobile is-vcentered">
+        <!-- OpenSora 1.2 -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">OpenSora 1.2</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_2/2.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- OpenSora 2.0 -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">OpenSora 2.0</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_2/3.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- Wan 2.2 -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">Wan 2.2</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_2/4.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- MEVG -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">MEVG</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_2/5.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- DiTCtrl -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">DiTCtrl</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_2/6.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- Mask2DiT -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold">Mask2DiT</p>
+          <video autoplay muted loop playsinline>
+            <source src="./static/videos/video_2/7.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- TunerDiT (Ours) -->
+        <div class="column has-text-centered">
+          <p class="is-size-7 has-text-weight-bold ours-label">TunerDiT (Ours)</p>
+          <div class="ours-highlight-container">
+            <video autoplay muted loop playsinline>
+              <source src="./static/videos/video_2/8.mp4" type="video/mp4">
+            </video>
+          </div>
+        </div>
+      </div>
+      <!-- Prompt for Row 2 -->
+      <div class="content has-text-centered mt-4">
+        <p class="is-size-6 is-italic">
+          <strong>Event Prompt:</strong> "A person is checking his phone. Then the person starts watering the plant. Then the person gently touches the leaves of a plant."
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Quantitative Results Section -->
+<section class="section" style="background-color: #ffffff; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered section-title mb-6">Quantitative Benchmarking on MEve</h2>
+    <div class="content has-text-justified mt-4 mb-5">
+      <p>
+        Quantitative comparison and preference-aligned evaluation. (a) Quantitative metrics across {TA, TIS, BC, IC, CSCV} and varying
+shot numbers {2, 3, 4}. (b) VLM-as-a-judge EI/TVA and human user study scores
+      </p>
+      <!-- <p class="is-size-6" style="color: var(--text-muted);">
+        <i>Note: Metrics with the highest value are highlighted in <strong>bold</strong> and the second best are <u>underlined</u>.</i>
+      </p> -->
+    </div>
+    
+    <!-- Table (a): Complete 5-Metric Table -->
+    <div class="box figure-card" style="padding: 1.5rem 0.5rem;">
+      <p class="title is-5 mb-4 has-text-centered"><b>(a) Quantitative comparison of different models across five metrics</b></p>
+      <p class="subtitle is-6 mb-5 has-text-centered" style="color: var(--text-muted); font-size: 0.9rem;">
+        <br> Quantitative comparison of different models across five metrics. <br> Metrics with the highest value are highlighted in bold and the second best are underlined.
+      </p>
+      <div class="table-container" style="padding: 0 1rem;">
+        <table class="table is-narrow is-hoverable is-fullwidth booktabs-table" style="font-size: 0.88rem;">
+          <thead>
+            <tr class="header-row">
+              <th></th>
+              <th colspan="3" class="has-text-weight-bold has-text-centered">TA &uparrow;</th>
+              <th colspan="3" class="has-text-weight-bold has-text-centered">TIS &uparrow;</th>
+              <th colspan="3" class="has-text-weight-bold has-text-centered">BC &uparrow;</th>
+              <th colspan="3" class="has-text-weight-bold has-text-centered">IC &uparrow;</th>
+              <th colspan="3" class="has-text-weight-bold has-text-centered">CSCV &uparrow;</th>
+            </tr>
+            <tr style="border-bottom: 1.5px solid var(--primary);">
+              <th class="has-text-weight-bold">Shot Number</th>
+              <!-- TA -->
+              <th class="has-text-weight-bold has-text-centered">2</th>
+              <th class="has-text-weight-bold has-text-centered">3</th>
+              <th class="has-text-weight-bold has-text-centered">4</th>
+              <!-- TIS -->
+              <th class="has-text-weight-bold has-text-centered">2</th>
+              <th class="has-text-weight-bold has-text-centered">3</th>
+              <th class="has-text-weight-bold has-text-centered">4</th>
+              <!-- BC -->
+              <th class="has-text-weight-bold has-text-centered">2</th>
+              <th class="has-text-weight-bold has-text-centered">3</th>
+              <th class="has-text-weight-bold has-text-centered">4</th>
+              <!-- IC -->
+              <th class="has-text-weight-bold has-text-centered">2</th>
+              <th class="has-text-weight-bold has-text-centered">3</th>
+              <th class="has-text-weight-bold has-text-centered">4</th>
+              <!-- CSCV -->
+              <th class="has-text-weight-bold has-text-centered">2</th>
+              <th class="has-text-weight-bold has-text-centered">3</th>
+              <th class="has-text-weight-bold has-text-centered">4</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Zero-shot Methods Subheader -->
+            <tr class="subheader-row">
+              <td colspan="16" class="has-text-weight-bold">Zero-shot Methods</td>
+            </tr>
+            <tr class="midrule-row">
+              <td>MEVG</td>
+              <!-- TA -->
+              <td class="has-text-centered">0.201</td>
+              <td class="has-text-centered">0.206</td>
+              <td class="has-text-centered">0.205</td>
+              <!-- TIS -->
+              <td class="has-text-centered">0.271</td>
+              <td class="has-text-centered">0.270</td>
+              <td class="has-text-centered">0.272</td>
+              <!-- BC -->
+              <td class="has-text-centered">0.228</td>
+              <td class="has-text-centered">0.249</td>
+              <td class="has-text-centered">0.270</td>
+              <!-- IC -->
+              <td class="has-text-centered">0.269</td>
+              <td class="has-text-centered">0.270</td>
+              <td class="has-text-centered">0.270</td>
+              <!-- CSCV -->
+              <td class="has-text-centered">0.688</td>
+              <td class="has-text-centered">0.703</td>
+              <td class="has-text-centered">0.707</td>
+            </tr>
+            <tr>
+              <td>DiTCtrl</td>
+              <!-- TA -->
+              <td class="has-text-centered">0.186</td>
+              <td class="has-text-centered">0.207</td>
+              <td class="has-text-centered"><u>0.216</u></td>
+              <!-- TIS -->
+              <td class="has-text-centered">0.259</td>
+              <td class="has-text-centered">0.271</td>
+              <td class="has-text-centered">0.278</td>
+              <!-- BC -->
+              <td class="has-text-centered">0.303</td>
+              <td class="has-text-centered">0.377</td>
+              <td class="has-text-centered">0.394</td>
+              <!-- IC -->
+              <td class="has-text-centered">0.280</td>
+              <td class="has-text-centered">0.354</td>
+              <td class="has-text-centered">0.389</td>
+              <!-- CSCV -->
+              <td class="has-text-centered">0.826</td>
+              <td class="has-text-centered">0.819</td>
+              <td class="has-text-centered">0.803</td>
+            </tr>
+            <tr>
+              <td>FreeNoise</td>
+              <!-- TA -->
+              <td class="has-text-centered">0.197</td>
+              <td class="has-text-centered">0.199</td>
+              <td class="has-text-centered">0.206</td>
+              <!-- TIS -->
+              <td class="has-text-centered">0.272</td>
+              <td class="has-text-centered">0.267</td>
+              <td class="has-text-centered">0.275</td>
+              <!-- BC -->
+              <td class="has-text-centered">0.275</td>
+              <td class="has-text-centered">0.401</td>
+              <td class="has-text-centered">0.431</td>
+              <!-- IC -->
+              <td class="has-text-centered">0.273</td>
+              <td class="has-text-centered">0.372</td>
+              <td class="has-text-centered">0.428</td>
+              <!-- CSCV -->
+              <td class="has-text-centered">0.732</td>
+              <td class="has-text-centered">0.743</td>
+              <td class="has-text-centered">0.748</td>
+            </tr>
+
+            <!-- Ours Subheader -->
+            <tr class="subheader-row">
+              <td colspan="16" class="has-text-weight-bold">Ours</td>
+            </tr>
+            <tr class="midrule-row ours-row">
+              <td><strong>TunerDiT</strong> Wan2.2</td>
+              <!-- TA -->
+              <td class="has-text-centered">0.201</td>
+              <td class="has-text-centered">0.211</td>
+              <td class="has-text-centered">0.211</td>
+              <!-- TIS -->
+              <td class="has-text-centered">0.273</td>
+              <td class="has-text-centered">0.277</td>
+              <td class="has-text-centered">0.279</td>
+              <!-- BC -->
+              <td class="has-text-centered"><strong>0.619</strong></td>
+              <td class="has-text-centered"><strong>0.575</strong></td>
+              <td class="has-text-centered"><strong>0.669</strong></td>
+              <!-- IC -->
+              <td class="has-text-centered"><strong>0.516</strong></td>
+              <td class="has-text-centered"><strong>0.512</strong></td>
+              <td class="has-text-centered"><strong>0.660</strong></td>
+              <!-- CSCV -->
+              <td class="has-text-centered">0.831</td>
+              <td class="has-text-centered"><u>0.840</u></td>
+              <td class="has-text-centered">0.830</td>
+            </tr>
+            <tr class="ours-row">
+              <td><strong>TunerDiT</strong> Open-Sora 1.2</td>
+              <!-- TA -->
+              <td class="has-text-centered"><u>0.202</u></td>
+              <td class="has-text-centered"><u>0.211</u></td>
+              <td class="has-text-centered">0.213</td>
+              <!-- TIS -->
+              <td class="has-text-centered"><u>0.277</u></td>
+              <td class="has-text-centered"><strong>0.284</strong></td>
+              <td class="has-text-centered"><u>0.281</u></td>
+              <!-- BC -->
+              <td class="has-text-centered"><u>0.508</u></td>
+              <td class="has-text-centered">0.472</td>
+              <td class="has-text-centered"><u>0.496</u></td>
+              <!-- IC -->
+              <td class="has-text-centered"><u>0.452</u></td>
+              <td class="has-text-centered">0.452</td>
+              <td class="has-text-centered">0.460</td>
+              <!-- CSCV -->
+              <td class="has-text-centered"><u>0.848</u></td>
+              <td class="has-text-centered">0.839</td>
+              <td class="has-text-centered"><u>0.844</u></td>
+            </tr>
+            <tr class="ours-row-strong">
+              <td><strong>TunerDiT</strong> Open-Sora 2.0</td>
+              <!-- TA -->
+              <td class="has-text-centered"><strong>0.210</strong></td>
+              <td class="has-text-centered"><strong>0.213</strong></td>
+              <td class="has-text-centered"><strong>0.219</strong></td>
+              <!-- TIS -->
+              <td class="has-text-centered"><strong>0.280</strong></td>
+              <td class="has-text-centered"><u>0.277</u></td>
+              <td class="has-text-centered"><strong>0.287</strong></td>
+              <!-- BC -->
+              <td class="has-text-centered">0.501</td>
+              <td class="has-text-centered"><u>0.532</u></td>
+              <td class="has-text-centered">0.496</td>
+              <!-- IC -->
+              <td class="has-text-centered">0.411</td>
+              <td class="has-text-centered"><u>0.488</u></td>
+              <td class="has-text-centered"><u>0.466</u></td>
+              <!-- CSCV -->
+              <td class="has-text-centered"><strong>0.866</strong></td>
+              <td class="has-text-centered"><strong>0.883</strong></td>
+              <td class="has-text-centered"><strong>0.854</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tables (b): Sub-tables side-by-side -->
+    <div class="box mt-5 figure-card">
+      <p class="title is-5 mb-3 has-text-centered"><b>(b) Evaluation metrics with human preference alignment</b></p>
+      <p class="subtitle is-6 mb-5 has-text-centered" style="color: var(--text-muted); font-size: 0.9rem;">
+        <br> Left: VLM-as-a-judge for Event Isolation (EI) and Text-Video Alignment (TVA); <br> Right: Human user study scores (18 persons).
+      </p>
+      
+      <div class="columns is-centered">
+        <!-- Left Sub-table -->
+        <div class="column is-5">
+          <div class="table-container">
+            <table class="table is-narrow is-hoverable is-fullwidth booktabs-table" style="font-size: 0.88rem;">
+              <thead>
+                <tr class="header-row">
+                  <th class="has-text-weight-bold">Name</th>
+                  <th class="has-text-centered has-text-weight-bold">EI</th>
+                  <th class="has-text-centered has-text-weight-bold">TVA</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="subheader-row">
+                  <td colspan="3" class="has-text-weight-bold">Zero-shot Methods</td>
+                </tr>
+                <tr class="midrule-row">
+                  <td>MEVG</td>
+                  <td class="has-text-centered">0.435</td>
+                  <td class="has-text-centered">1.375</td>
+                </tr>
+                <tr>
+                  <td>FreeNoise</td>
+                  <td class="has-text-centered">0.436</td>
+                  <td class="has-text-centered">1.400</td>
+                </tr>
+                <tr>
+                  <td>DitCtrl</td>
+                  <td class="has-text-centered">0.375</td>
+                  <td class="has-text-centered">1.425</td>
+                </tr>
+                <tr class="subheader-row">
+                  <td colspan="3" class="has-text-weight-bold">Ours</td>
+                </tr>
+                <tr class="midrule-row ours-row">
+                  <td><strong>TunerDiT</strong> Wan 2.2</td>
+                  <td class="has-text-centered">0.474</td>
+                  <td class="has-text-centered">1.503</td>
+                </tr>
+                <tr class="ours-row">
+                  <td><strong>TunerDiT</strong> Open-Sora 1.2</td>
+                  <td class="has-text-centered">0.499</td>
+                  <td class="has-text-centered">1.492</td>
+                </tr>
+                <tr class="ours-row-strong">
+                  <td><strong>TunerDiT</strong> Open-Sora 2.0</td>
+                  <td class="has-text-centered"><strong>0.572</strong></td>
+                  <td class="has-text-centered"><strong>1.533</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right Sub-table -->
+        <div class="column is-7">
+          <div class="table-container">
+            <table class="table is-narrow is-hoverable is-fullwidth booktabs-table" style="font-size: 0.88rem;">
+              <thead>
+                <tr class="header-row">
+                  <th class="has-text-weight-bold">Model</th>
+                  <th class="has-text-centered has-text-weight-bold">Q1</th>
+                  <th class="has-text-centered has-text-weight-bold">Q2</th>
+                  <th class="has-text-centered has-text-weight-bold">Q3</th>
+                  <th class="has-text-centered has-text-weight-bold">Q4</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="subheader-row">
+                  <td colspan="5" class="has-text-weight-bold">Zero-shot Methods</td>
+                </tr>
+                <tr class="midrule-row">
+                  <td>MEVG</td>
+                  <td class="has-text-centered">1.82</td>
+                  <td class="has-text-centered">1.91</td>
+                  <td class="has-text-centered">1.82</td>
+                  <td class="has-text-centered">2.05</td>
+                </tr>
+                <tr>
+                  <td>FreeNoise</td>
+                  <td class="has-text-centered">1.99</td>
+                  <td class="has-text-centered">2.01</td>
+                  <td class="has-text-centered">1.99</td>
+                  <td class="has-text-centered">1.79</td>
+                </tr>
+                <tr>
+                  <td>DiTCtrl</td>
+                  <td class="has-text-centered">2.11</td>
+                  <td class="has-text-centered">2.03</td>
+                  <td class="has-text-centered">2.18</td>
+                  <td class="has-text-centered">2.35</td>
+                </tr>
+                <tr class="subheader-row">
+                  <td colspan="5" class="has-text-weight-bold">Ours</td>
+                </tr>
+                <tr class="midrule-row ours-row">
+                  <td><strong>TunerDiT</strong> Wan 2.2</td>
+                  <td class="has-text-centered">3.01</td>
+                  <td class="has-text-centered">2.97</td>
+                  <td class="has-text-centered">2.82</td>
+                  <td class="has-text-centered">3.30</td>
+                </tr>
+                <tr class="ours-row">
+                  <td><strong>TunerDiT</strong> OpenSora 1.2</td>
+                  <td class="has-text-centered">2.66</td>
+                  <td class="has-text-centered">2.63</td>
+                  <td class="has-text-centered">2.62</td>
+                  <td class="has-text-centered">2.94</td>
+                </tr>
+                <tr class="ours-row-strong">
+                  <td><strong>TunerDiT</strong> OpenSora 2.0</td>
+                  <td class="has-text-centered"><strong>3.16</strong></td>
+                  <td class="has-text-centered"><strong>3.03</strong></td>
+                  <td class="has-text-centered"><strong>3.03</strong></td>
+                  <td class="has-text-centered"><strong>3.34</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BibTeX Block -->
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title" style="color: var(--primary); font-weight: 700;">BibTeX</h2>
+    <pre><code>@misc{liao2026tunerdittrainingfreeprogressivesteering,
+      title={TunerDiT: Training-free Progressive Steering of Diffusion Transformer for Multi-Event Video Generation}, 
+      author={Ruotong Liao and Guowen Huang and Qing Cheng and Guangyao Zhai and Lei Zhang and Xun Xiao and Thomas Seidl and Daniel Cremers and Volker Tresp},
+      year={2026},
+      eprint={2605.31590},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2605.31590}, 
+}</code></pre>
+  </div>
+</section>
+
+<footer class="footer" style="background-color: #ffffff; border-top: 1px solid var(--border-color); padding: 3rem 1.5rem;">
+  <div class="container">
+    <div class="content has-text-centered">
+      <a class="icon-link" href="https://arxiv.org/abs/2605.31590" style="color: var(--text-muted); font-size: 1.5rem; margin: 0 0.5rem;">
+        <i class="fas fa-file-pdf"></i>
+      </a>
+      <!-- <a class="icon-link" href="https://tunerdit.github.io" class="external-link" style="color: var(--text-muted); font-size: 1.5rem; margin: 0 0.5rem;">
+        <i class="fab fa-github"></i>
+      </a> -->
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content has-text-centered" style="color: var(--text-muted); font-size: 0.9rem;">
+          <p>
+            This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" style="color: var(--secondary);">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <p>
+            This template is borrowed from <a href="https://github.com/nerfies/nerfies.github.io" style="color: var(--secondary);">Nerfies</a>. We appreciate the authors for sharing their source code.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
